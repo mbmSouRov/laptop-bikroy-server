@@ -45,6 +45,16 @@ async function run() {
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
+    app.get("/allUsers/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({
+        isUser: user?.role === "User Account",
+        isSeller: user?.role === "Seller Account",
+        isAdmin: user?.role === "Admin",
+      });
+    });
   } finally {
   }
 }
