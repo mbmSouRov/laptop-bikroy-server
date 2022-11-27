@@ -39,9 +39,14 @@ async function run() {
       const cursor = await laptopCollections.find(query).toArray();
       res.send(cursor);
     });
+    app.post("/laptops", async (req, res) => {
+      const product = req.body;
+      const result = await laptopCollections.insertOne(product);
+      res.send(result);
+    });
     app.get("/laptops/:brand", async (req, res) => {
       const brand = req.params.brand;
-      const query = { brand: brand };
+      const query = { product_category: brand };
       const result = await laptopCollections.find(query).toArray();
       res.send(result);
     });
@@ -87,11 +92,13 @@ async function run() {
       const result = await productsCollection.find(query).toArray();
       res.send(result);
     });
+
     app.get("/allProducts/:email", async (req, res) => {
       const email = req.params.email;
       console.log(email);
       const query = { seller_email: email };
-      const result = await productsCollection.find(query).toArray();
+      const sort = { _id: -1 };
+      const result = await productsCollection.find(query).sort(sort).toArray();
       res.send(result);
     });
     app.delete("/allProducts/:email/:id", async (req, res) => {
