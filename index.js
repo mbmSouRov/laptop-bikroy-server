@@ -30,6 +30,9 @@ async function run() {
     const productsCollection = client
       .db("laptopBikroy")
       .collection("allProducts");
+    const advertiseCollection = client
+      .db("laptopBikroy")
+      .collection("allAdvertisedProducts");
 
     app.get("/laptops", async (req, res) => {
       const query = {};
@@ -75,20 +78,45 @@ async function run() {
       const result = await productsCollection.find(query).toArray();
       res.send(result);
     });
-    // app.delete("/allProducts/:email/:id", async (req, res) => {
-    //   const email = req.params.email;
-    //   const id = req.params.id;
-    //   console.log(email, id);
-    //   const query = { seller_email: email, _id: ObjectId(id) };
-    //   const result = await productsCollection.find(query).toArray();
-    //   res.send(result);
-    // });
-
     app.delete("/allProducts/:email/:id", async (req, res) => {
       const email = req.params.email;
       const id = req.params.id;
       const filter = { seller_email: email, _id: ObjectId(id) };
       const result = await productsCollection.deleteOne(filter);
+      res.send(result);
+    });
+    app.put("/allProducts/:email/:id", async (req, res) => {
+      const email = req.params.email;
+      const id = req.params.id;
+      const filter = { seller_email: email, _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          status: "advertised",
+        },
+      };
+      const result = await productsCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+    app.post("/allAdvertisedProducts", async (req, res) => {
+      const user = req.body;
+      const result = await advertiseCollection.insertOne(user);
+      res.send(result);
+    });
+    app.get("/allAdvertisedProducts", async (req, res) => {
+      const query = {};
+      const sort = { _id: -1 };
+      const result = await advertiseCollection.find(query).sort(sort).toArray();
+      res.send(result);
+    });
+    app.delete("/allAdvertisedProducts/:productName", async (req, res) => {
+      const productName = req.params.productName;
+      const filter = { product_name: productName };
+      const result = await advertiseCollection.deleteOne(filter);
       res.send(result);
     });
   } finally {
