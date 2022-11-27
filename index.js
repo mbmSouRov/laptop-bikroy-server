@@ -11,6 +11,21 @@ const app = express();
 // middleware
 app.use(cors());
 app.use(express.json());
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send("unauthorized Access");
+  }
+  const token = authHeader.split(" ")[1];
+
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decided) {
+    if (err) {
+      return res.status(403).send({ message: `forbidden access` });
+    }
+    req.decided = decided;
+    next();
+  });
+}
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASWORD}@cluster0.jc72o0s.mongodb.net/?retryWrites=true&w=majority`;
 // console.log(uri);
@@ -27,6 +42,10 @@ async function run() {
       .db("laptopBikroy")
       .collection("laptopCollections");
     const usersCollection = client.db("laptopBikroy").collection("allUsers");
+    const reportedProductsCollection = client
+      .db("laptopBikroy")
+      .collection("reportedProducts");
+    const bookingCollection = client.db("laptopBikroy").collection("bookings");
     const productsCollection = client
       .db("laptopBikroy")
       .collection("allProducts");
@@ -48,6 +67,28 @@ async function run() {
       const brand = req.params.brand;
       const query = { product_category: brand };
       const result = await laptopCollections.find(query).toArray();
+      res.send(result);
+    });
+    app.delete("/laptops/:productName", async (req, res) => {
+      const productName = req.params.productName;
+      const filter = { product_name: productName };
+      const result = await laptopCollections.deleteOne(filter);
+      res.send(result);
+    });
+    app.put("/laptops/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          status: "booked",
+        },
+      };
+      const result = await laptopCollections.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
       res.send(result);
     });
     app.post("/allUsers", async (req, res) => {
@@ -108,6 +149,12 @@ async function run() {
       const result = await productsCollection.deleteOne(filter);
       res.send(result);
     });
+    app.delete("/allProducts/:productName", async (req, res) => {
+      const productName = req.params.productName;
+      const filter = { product_name: productName };
+      const result = await productsCollection.deleteOne(filter);
+      res.send(result);
+    });
     app.put("/allProducts/:email/:id", async (req, res) => {
       const email = req.params.email;
       const id = req.params.id;
@@ -141,6 +188,46 @@ async function run() {
       const filter = { product_name: productName };
       const result = await advertiseCollection.deleteOne(filter);
       res.send(result);
+    });
+    app.post("/booking", async (req, res) => {
+      const user = req.body;
+      const result = await bookingCollection.insertOne(user);
+      res.send(result);
+    });
+    app.get(`/booking/:email`, async (req, res) => {
+      const email = req.params.email;
+      const query = { buyer_email: email };
+      const sort = { _id: -1 };
+      const result = await bookingCollection.find(query).sort(sort).toArray();
+      res.send(result);
+    });
+    app.post("/reportedProducts", async (req, res) => {
+      const product = req.body;
+      const result = await reportedProductsCollection.insertOne(product);
+      res.send(result);
+    });
+    app.get("/reportedProducts", async (req, res) => {
+      const query = {};
+      const result = await reportedProductsCollection.find(query).toArray();
+      res.send(result);
+    });
+    app.delete("/reportedProducts/:productName", async (req, res) => {
+      const productName = req.params.productName;
+      const filter = { product_name: productName };
+      const result = await reportedProductsCollection.deleteOne(filter);
+      res.send(result);
+    });
+    app.get("jwt", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
+      if (user) {
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
+          expiresIn: "1h",
+        });
+        return res.send({ accessToken: token });
+      }
+      res.status(403).send({ accessToken: "ggwp" });
     });
   } finally {
   }
