@@ -26,7 +26,6 @@ function verifyJWT(req, res, next) {
     next();
   });
 }
-
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASWORD}@cluster0.jc72o0s.mongodb.net/?retryWrites=true&w=majority`;
 // console.log(uri);
 const client = new MongoClient(uri, {
@@ -34,7 +33,6 @@ const client = new MongoClient(uri, {
   useUnifiedTopology: true,
   serverApi: ServerApiVersion.v1,
 });
-//ggwp
 
 async function run() {
   try {
